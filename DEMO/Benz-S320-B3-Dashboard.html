@@ -1,0 +1,422 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Benz S320 B3 Dashboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1a2e;color:#e0e0e0;font-family:'Segoe UI',sans-serif;overflow:hidden;height:100vh}
+.dash{display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:auto 1fr auto;gap:10px;padding:15px;height:100vh}
+.header{grid-column:1/4;text-align:center;padding:5px}
+.header h1{font-size:22px;color:#c0c0c0;letter-spacing:3px}
+.header .time{font-size:14px;color:#888}
+
+.gauge-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center}
+svg.gauge{filter:drop-shadow(0 0 10px rgba(0,0,0,0.5))}
+
+.bottom{grid-column:1/4;display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:5px}
+.indicator{background:#16213e;border-radius:8px;padding:10px;text-align:center;border:1px solid #333}
+.indicator .label{font-size:11px;color:#888;text-transform:uppercase;margin-bottom:4px}
+.indicator .value{font-size:18px;font-weight:bold}
+
+.controls{grid-column:1/4;text-align:center;padding:5px}
+.controls button{background:#16213e;color:#e0e0e0;border:1px solid #444;padding:8px 20px;margin:0 5px;border-radius:5px;cursor:pointer;font-size:13px}
+.controls button:hover{background:#1a3a5c}
+.controls button.active{background:#0f3460;border-color:#4cc9f0}
+.controls .slider-wrap{display:inline-block;margin-left:15px;vertical-align:middle}
+.controls input[type=range]{width:300px;vertical-align:middle}
+.controls .time-label{font-size:13px;color:#aaa;margin-left:8px}
+
+.on{color:#4cc9f0}.off{color:#555}
+.warn{color:#f7b731}
+.hot{color:#fc5c65}
+.cool{color:#4cc9f0}
+</style>
+</head>
+<body>
+<div class="dash">
+  <div class="header">
+    <h1>MERCEDES-BENZ S320 (W220)</h1>
+    <div class="time">B3 Capture Replay &mdash; <span id="elapsed">0:00</span> / 4:02</div>
+  </div>
+
+  <!-- RPM Gauge -->
+  <div class="gauge-wrap">
+    <svg class="gauge" width="280" height="200" viewBox="0 0 280 200">
+      <defs>
+        <linearGradient id="rpmGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#4cc9f0"/>
+          <stop offset="70%" stop-color="#f7b731"/>
+          <stop offset="100%" stop-color="#fc5c65"/>
+        </linearGradient>
+      </defs>
+      <!-- Background arc -->
+      <path d="M 30 180 A 120 120 0 0 1 250 180" fill="none" stroke="#2a2a4a" stroke-width="18" stroke-linecap="round"/>
+      <!-- Value arc -->
+      <path id="rpmArc" d="M 30 180 A 120 120 0 0 1 250 180" fill="none" stroke="url(#rpmGrad)" stroke-width="18" stroke-linecap="round" stroke-dasharray="0 999"/>
+      <!-- Ticks -->
+      <text x="25" y="195" fill="#666" font-size="11">0</text>
+      <text x="55" y="105" fill="#666" font-size="11">2</text>
+      <text x="130" y="65" fill="#666" font-size="11">4</text>
+      <text x="205" y="105" fill="#666" font-size="11">6</text>
+      <text x="240" y="195" fill="#666" font-size="11">8</text>
+      <!-- Value -->
+      <text id="rpmVal" x="140" y="155" text-anchor="middle" fill="#fff" font-size="42" font-weight="bold">0</text>
+      <text x="140" y="175" text-anchor="middle" fill="#888" font-size="13">RPM</text>
+    </svg>
+  </div>
+
+  <!-- Coolant Temp Gauge -->
+  <div class="gauge-wrap">
+    <svg class="gauge" width="280" height="200" viewBox="0 0 280 200">
+      <defs>
+        <linearGradient id="tempGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#4cc9f0"/>
+          <stop offset="50%" stop-color="#4cc9f0"/>
+          <stop offset="80%" stop-color="#f7b731"/>
+          <stop offset="100%" stop-color="#fc5c65"/>
+        </linearGradient>
+      </defs>
+      <path d="M 30 180 A 120 120 0 0 1 250 180" fill="none" stroke="#2a2a4a" stroke-width="18" stroke-linecap="round"/>
+      <path id="tempArc" d="M 30 180 A 120 120 0 0 1 250 180" fill="none" stroke="url(#tempGrad)" stroke-width="18" stroke-linecap="round" stroke-dasharray="0 999"/>
+      <text x="25" y="195" fill="#666" font-size="11">-40</text>
+      <text x="65" y="105" fill="#666" font-size="11">0</text>
+      <text x="130" y="65" fill="#666" font-size="11">60</text>
+      <text x="195" y="105" fill="#666" font-size="11">100</text>
+      <text x="235" y="195" fill="#666" font-size="11">130</text>
+      <text id="tempVal" x="140" y="150" text-anchor="middle" fill="#4cc9f0" font-size="42" font-weight="bold">0</text>
+      <text x="140" y="175" text-anchor="middle" fill="#888" font-size="13">COOLANT &deg;C</text>
+    </svg>
+  </div>
+
+  <!-- Steering + Speed -->
+  <div class="gauge-wrap">
+    <svg class="gauge" width="280" height="200" viewBox="0 0 280 200">
+      <!-- Steering wheel -->
+      <circle cx="140" cy="100" r="60" fill="none" stroke="#2a2a4a" stroke-width="10"/>
+      <circle cx="140" cy="100" r="60" fill="none" stroke="#4cc9f0" stroke-width="10" stroke-dasharray="30 999" stroke-dashoffset="0" opacity="0.3"/>
+      <g id="steerGroup" transform="rotate(0,140,100)">
+        <circle cx="140" cy="100" r="55" fill="none" stroke="#555" stroke-width="8" stroke-linecap="round"/>
+        <line x1="140" y1="45" x2="140" y2="70" stroke="#888" stroke-width="4" stroke-linecap="round"/>
+        <line x1="85" y1="100" x2="110" y2="100" stroke="#888" stroke-width="4" stroke-linecap="round"/>
+        <line x1="170" y1="100" x2="195" y2="100" stroke="#888" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="140" cy="100" r="12" fill="#333" stroke="#555" stroke-width="2"/>
+      </g>
+      <text id="steerVal" x="140" y="185" text-anchor="middle" fill="#aaa" font-size="14">0.0&deg;</text>
+      <!-- Speed overlay -->
+      <text id="speedVal" x="140" y="108" text-anchor="middle" fill="#fff" font-size="22" font-weight="bold">0</text>
+      <text x="140" y="122" text-anchor="middle" fill="#888" font-size="10">km/h</text>
+    </svg>
+  </div>
+
+  <!-- Bottom indicators -->
+  <div class="bottom">
+    <div class="indicator">
+      <div class="label">MAF (g/s)</div>
+      <div class="value" id="mafVal">0</div>
+    </div>
+    <div class="indicator">
+      <div class="label">Throttle %</div>
+      <div class="value" id="thrVal">0</div>
+    </div>
+    <div class="indicator">
+      <div class="label">Engine Torque</div>
+      <div class="value" id="torqVal">0</div>
+    </div>
+    <div class="indicator">
+      <div class="label">Doors</div>
+      <div class="value" id="doorVal" class="off">--</div>
+    </div>
+    <div class="indicator">
+      <div class="label">Lights</div>
+      <div class="value" id="lightVal" class="off">OFF</div>
+    </div>
+  </div>
+
+  <!-- Playback controls -->
+  <div class="controls">
+    <button id="btnPlay" class="active" onclick="togglePlay()">&#9654; Play</button>
+    <button onclick="setSpeed(0.5)">0.5x</button>
+    <button id="btn1x" class="active" onclick="setSpeed(1)">1x</button>
+    <button onclick="setSpeed(2)">2x</button>
+    <button onclick="setSpeed(5)">5x</button>
+    <span class="slider-wrap">
+      <input type="range" id="scrubber" min="0" max="370" value="0" oninput="scrub(this.value)">
+      <span class="time-label" id="scrubTime">0:00</span>
+    </span>
+  </div>
+</div>
+
+<script>
+// [sec, rpm, coolant, speed, maf, throttle, steer, torque, doors, lt0, lt1]
+const DATA=[
+[0,0,69,0,517.1,0,13.3,80,87,17,4],
+[2,0,69,0,517.1,0,13.3,80,87,17,4],
+[4,0,69,0,614.4,0,13.3,80,87,17,4],
+[6,0,67,0,581.1,0,13.3,80,87,17,4],
+[8,787,67,0,581.1,2.7,13.3,80,87,17,4],
+[10,746,67,0,581.1,2.7,13.3,80,87,17,4],
+[12,761,67,0,222.7,1.6,13.3,80,87,17,4],
+[14,760,67,0,222.7,1.6,13.3,80,87,17,4],
+[16,773,67,0,222.7,1.6,13.3,80,87,17,4],
+[18,729,67,0,222.7,1.6,13.3,80,87,17,4],
+[20,759,67,0,222.7,1.6,13.3,86,87,17,4],
+[22,771,67,2,225.3,2,13.3,140,87,17,4],
+[24,770,67,3,222.7,2,13.3,215,87,17,4],
+[26,768,67,3,222.7,2,13.3,57,87,17,4],
+[28,767,67,2,222.7,2,13.3,141,87,17,4],
+[30,759,68,4,222.7,1.6,13.3,5,87,17,4],
+[32,815,68,6,578.6,2.4,13.3,179,87,17,4],
+[34,1180,68,10,583.7,2.7,13.3,173,87,17,4],
+[36,1437,68,13,583.7,3.5,13.3,252,87,17,4],
+[38,1607,68,15,583.7,3.9,13.3,130,87,17,4],
+[40,920,68,18,583.7,2.4,13.3,62,87,17,5],
+[42,800,69,15,276.5,1.6,13.3,224,87,17,5],
+[44,793,69,11,291.8,1.6,13.3,23,87,17,5],
+[46,788,69,3,222.7,1.6,13.3,152,87,17,5],
+[48,800,69,2,225.3,2,13.3,224,87,17,5],
+[50,842,69,6,266.2,2,13.3,104,87,17,5],
+[52,896,69,8,586.2,2,13.3,54,87,17,5],
+[54,772,70,8,225.3,1.6,13.3,10,87,17,5],
+[56,813,70,7,302.1,2,13.3,179,87,17,5],
+[58,944,70,8,583.7,2,13.3,123,87,17,5],
+[60,1015,70,9,583.7,2.4,13.3,92,87,17,5],
+[62,809,70,9,309.8,1.6,13.3,75,87,17,5],
+[64,788,70,7,222.7,1.6,13.3,19,87,17,5],
+[66,790,70,4,222.7,2,13.3,136,87,17,5],
+[68,801,71,3,235.5,2,13.3,232,87,17,5],
+[70,801,71,5,243.2,2,13.3,131,87,17,5],
+[72,1131,71,9,583.7,2.7,13.3,90,87,17,5],
+[74,1109,71,11,558.1,2.4,13.3,123,87,17,5],
+[76,1052,71,11,540.2,2,13.3,155,87,17,5],
+[78,880,71,10,422.4,1.6,13.3,168,87,17,5],
+[80,899,71,8,576,2,13.3,140,87,17,5],
+[82,984,72,8,583.7,2,13.3,110,87,17,5],
+[84,901,72,9,583.7,2,13.3,95,87,17,5],
+[86,880,72,8,496.6,1.6,13.3,59,87,17,5],
+[88,952,72,8,583.7,2,13.3,25,87,17,5],
+[90,925,72,9,314.9,2,13.3,7,87,17,5],
+[92,758,72,8,225.3,1.6,13.3,218,87,17,5],
+[94,833,72,7,583.7,2,13.3,142,87,17,5],
+[96,789,72,7,222.7,1.6,13.3,88,87,17,5],
+[98,793,72,6,222.7,1.6,13.3,5,87,17,5],
+[100,794,73,3,222.7,2,13.3,112,87,17,6],
+[102,1061,73,7,583.7,2.7,13.3,12,87,17,6],
+[104,1126,76,9,583.7,2.7,13.3,7,87,17,6],
+[106,1380,73,12,583.7,3.1,13.3,76,87,17,6],
+[108,1724,73,16,583.7,4.3,13.3,233,87,17,6],
+[110,1573,73,20,583.7,4.3,13.3,226,87,17,6],
+[112,1764,74,24,581.1,5.1,13.3,71,87,17,6],
+[114,1512,74,28,581.1,4.3,13.3,8,87,17,6],
+[116,1555,74,31,581.1,5.1,13.3,35,87,17,6],
+[118,1519,75,35,581.1,5.1,13.3,151,87,17,6],
+[120,1562,75,36,348.2,3.5,13.3,66,87,17,6],
+[122,1581,75,37,442.9,3.5,13.3,251,87,17,6],
+[124,1393,75,34,583.7,5.9,13.3,143,87,17,6],
+[126,1124,76,30,583.7,4.3,13.3,157,87,17,6],
+[128,943,76,24,583.7,3.1,13.3,37,87,17,6],
+[130,1095,76,21,583.7,2.4,13.3,87,87,17,6],
+[132,1149,76,22,583.7,2.7,13.3,144,87,17,6],
+[134,791,76,22,225.3,1.6,13.3,198,87,17,6],
+[136,775,76,13,225.3,1.6,13.3,95,87,17,6],
+[138,788,76,8,222.7,1.6,13.3,75,87,17,6],
+[140,793,76,6,222.7,1.6,13.3,246,87,17,6],
+[142,797,77,4,230.4,2,13.3,121,87,17,6],
+[144,799,77,0,222.7,2,13.3,170,87,17,6],
+[146,797,77,0,222.7,2,13.3,170,87,17,6],
+[148,801,77,2,222.7,2,13.3,217,87,17,6],
+[150,797,77,2,225.3,2,13.3,24,87,17,6],
+[152,803,77,0,233,2,13.3,33,87,17,6],
+[154,800,77,0,222.7,2,13.3,33,87,17,6],
+[156,799,78,0,225.3,2,13.3,33,87,17,6],
+[158,800,81,0,225.3,2,13.3,33,87,17,6],
+[160,798,78,0,222.7,2,13.3,33,87,17,7],
+[162,800,81,0,227.8,2,13.3,33,87,17,7],
+[164,801,78,0,225.3,2,13.3,33,87,17,7],
+[166,800,78,0,225.3,2,13.3,33,87,17,7],
+[168,801,78,0,225.3,2,13.3,33,87,17,7],
+[170,799,78,0,225.3,2,13.3,33,87,17,7],
+[172,800,78,0,222.7,2,13.3,33,87,17,7],
+[174,798,79,2,222.7,2,13.3,72,87,17,7],
+[176,798,79,3,222.7,2,13.3,173,87,17,7],
+[178,801,79,4,235.5,2,13.3,25,87,17,7],
+[180,795,79,2,222.7,2,13.3,109,87,17,7],
+[182,811,79,1,261.1,2,13.3,155,87,17,7],
+[184,800,79,0,225.3,2,13.3,157,87,17,7],
+[186,799,79,0,225.3,2,13.3,157,87,17,7],
+[188,800,80,0,225.3,2,13.3,157,87,17,7],
+[190,799,80,0,225.3,2,13.3,157,87,17,7],
+[192,798,80,0,225.3,2,13.3,171,87,17,7],
+[194,803,80,0,222.7,2,13.3,180,87,17,7],
+[196,801,80,0,222.7,2,13.3,185,87,17,7],
+[198,799,80,0,250.9,2,13.3,217,87,17,7],
+[200,1048,80,6,583.7,2.7,13.3,115,87,17,7],
+[202,1223,80,11,565.8,2.7,13.3,177,87,17,7],
+[204,1556,79,13,583.7,3.5,13.3,19,87,17,7],
+[206,1483,79,17,583.7,3.5,13.3,211,87,17,7],
+[208,1518,80,22,583.7,3.5,13.3,254,87,17,7],
+[210,1664,80,25,583.7,5.1,13.3,126,87,17,7],
+[212,1285,80,29,583.7,3.1,13.3,104,87,17,7],
+[214,1216,84,29,389.1,2.4,13.3,105,87,17,7],
+[216,950,81,25,583.7,3.1,13.3,19,87,17,7],
+[218,979,81,22,586.2,2,13.3,77,87,17,7],
+[220,911,81,21,583.7,2,13.3,118,87,17,8],
+[222,1077,81,21,583.7,2.4,13.3,156,87,17,8],
+[224,787,81,21,227.8,1.6,13.3,186,87,17,8],
+[226,798,81,16,222.7,1.6,13.3,127,87,17,8],
+[228,830,81,8,240.6,1.6,13.3,135,87,17,8],
+[230,962,82,8,583.7,2,13.3,92,87,17,8],
+[232,801,82,8,314.9,1.6,13.3,70,87,17,8],
+[234,786,82,3,222.7,1.6,13.3,198,87,17,8],
+[236,803,82,0,227.8,2,13.3,230,87,17,8],
+[238,802,82,0,227.8,2,13.3,230,87,17,8],
+[240,799,82,0,225.3,2,13.3,230,87,17,8],
+[242,800,82,0,225.3,2,13.3,230,87,17,8]
+];
+
+</script>
+<script>
+let idx = 0, playing = true, playSpeed = 1, timer = null;
+const maxRPM = 8000, maxTemp = 130, minTemp = -40;
+const arcLen = 345.6; // circumference of the gauge arc
+
+function polarToCart(cx, cy, r, deg) {
+  const rad = (deg - 180) * Math.PI / 180;
+  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+}
+
+function setArc(id, val, min, max) {
+  const pct = Math.max(0, Math.min(1, (val - min) / (max - min)));
+  document.getElementById(id).setAttribute('stroke-dasharray', (pct * arcLen) + ' ' + arcLen);
+}
+
+function formatTime(sec) {
+  const m = Math.floor(sec / 60), s = sec % 60;
+  return m + ':' + String(s).padStart(2, '0');
+}
+
+function decodeDoors(val) {
+  const bits = [];
+  if (val & 0x01) bits.push('FL');
+  if (val & 0x02) bits.push('FR');
+  if (val & 0x04) bits.push('RL');
+  if (val & 0x08) bits.push('RR');
+  if (val & 0x10) bits.push('TR');
+  return bits.length > 0 ? bits.join(' ') : 'ALL CLOSED';
+}
+
+function decodeLights(l0, l1) {
+  const on = [];
+  if (l0 & 0x10) on.push('LOW');
+  if (l0 & 0x04) on.push('HIGH');
+  if (l1 & 0x20) on.push('FOG');
+  if (l1 & 0x10) on.push('PARK');
+  if (l1 & 0x01) on.push('TURN');
+  if (l0 > 0 || l1 > 0) { if (on.length === 0) on.push('ON'); }
+  return on.length > 0 ? on.join(' ') : 'OFF';
+}
+
+function update(i) {
+  if (i >= DATA.length) { i = 0; idx = 0; }
+  const d = DATA[i];
+  const [sec, rpm, coolant, speed, maf, throttle, steer, torque, doors, lt0, lt1] = d;
+
+  // RPM
+  setArc('rpmArc', rpm, 0, maxRPM);
+  document.getElementById('rpmVal').textContent = Math.round(rpm);
+
+  // Coolant
+  setArc('tempArc', coolant, minTemp, maxTemp);
+  const tEl = document.getElementById('tempVal');
+  tEl.textContent = Math.round(coolant);
+  tEl.setAttribute('fill', coolant > 100 ? '#fc5c65' : coolant > 80 ? '#f7b731' : '#4cc9f0');
+
+  // Speed
+  document.getElementById('speedVal').textContent = Math.round(speed);
+
+  // Steering
+  const clampedSteer = Math.max(-180, Math.min(180, steer));
+  document.getElementById('steerGroup').setAttribute('transform', 'rotate(' + clampedSteer + ',140,100)');
+  document.getElementById('steerVal').textContent = steer.toFixed(1) + 'Â°';
+
+  // MAF
+  const mafEl = document.getElementById('mafVal');
+  mafEl.textContent = maf > 0 ? maf.toFixed(1) : '0';
+  mafEl.style.color = maf > 200 ? '#f7b731' : '#4cc9f0';
+
+  // Throttle
+  document.getElementById('thrVal').textContent = throttle.toFixed(1);
+
+  // Torque
+  document.getElementById('torqVal').textContent = torque;
+
+  // Doors
+  const doorStr = decodeDoors(doors);
+  const doorEl = document.getElementById('doorVal');
+  doorEl.textContent = doorStr;
+  doorEl.style.color = doorStr === 'ALL CLOSED' ? '#4cc9f0' : '#f7b731';
+
+  // Lights
+  const lightStr = decodeLights(lt0, lt1);
+  const lightEl = document.getElementById('lightVal');
+  lightEl.textContent = lightStr;
+  lightEl.style.color = lightStr === 'OFF' ? '#555' : '#f7b731';
+
+  // Time
+  document.getElementById('elapsed').textContent = formatTime(sec);
+  document.getElementById('scrubber').value = i;
+  document.getElementById('scrubTime').textContent = formatTime(sec);
+}
+
+function tick() {
+  update(idx);
+  idx++;
+  if (idx >= DATA.length) idx = 0;
+}
+
+function togglePlay() {
+  playing = !playing;
+  const btn = document.getElementById('btnPlay');
+  if (playing) {
+    btn.textContent = 'â¸ Pause';
+    btn.classList.add('active');
+    startTimer();
+  } else {
+    btn.textContent = 'â–¶ Play';
+    btn.classList.remove('active');
+    clearInterval(timer);
+  }
+}
+
+function setSpeed(s) {
+  playSpeed = s;
+  document.querySelectorAll('.controls button').forEach(b => {
+    if (b.textContent.includes('x')) b.classList.remove('active');
+  });
+  const label = s + 'x';
+  document.querySelectorAll('.controls button').forEach(b => {
+    if (b.textContent.trim() === label) b.classList.add('active');
+  });
+  if (playing) { clearInterval(timer); startTimer(); }
+}
+
+function startTimer() {
+  clearInterval(timer);
+  timer = setInterval(tick, 2000 / playSpeed);
+}
+
+function scrub(val) {
+  idx = parseInt(val);
+  update(idx);
+}
+
+// Load data and start
+window.addEventListener('load', () => {
+  document.getElementById('scrubber').max = DATA.length - 1;
+  togglePlay();
+});
+</script>
+</body>
+</html>
+
+
