@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Benz S320 CAN Dashboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d1117;color:#e6edf3;font-family:'Segoe UI',system-ui,sans-serif;height:100vh;overflow:hidden}
+
+/* Drop zone overlay */
+#dropzone{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;background:#0d1117}
+#dropzone h1{font-size:28px;color:#58a6ff;margin-bottom:10px;letter-spacing:2px}
+#dropzone p{color:#8b949e;font-size:15px;margin-bottom:30px}
+#dropzone .drop-area{width:500px;height:220px;border:2px dashed #30363d;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .3s}
+#dropzone .drop-area:hover,#dropzone .drop-area.dragover{border-color:#58a6ff;background:rgba(88,166,255,.06)}
+#dropzone .drop-area svg{width:64px;height:64px;fill:#30363d;margin-bottom:16px;transition:fill .3s}
+#dropzone .drop-area:hover svg{fill:#58a6ff}
+#dropzone .drop-area span{color:#8b949e;font-size:14px}
+#dropzone .drop-area .btn{margin-top:16px;background:#238636;color:#fff;border:none;padding:10px 28px;border-radius:8px;font-size:14px;cursor:pointer}
+#dropzone .drop-area .btn:hover{background:#2ea043}
+#dropzone input{display:none}
+#dropzone .status{margin-top:16px;color:#58a6ff;font-size:13px;min-height:20px}
+
+/* Dashboard */
+#dashboard{display:none;height:100vh}
+.dash{display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:auto 1fr auto auto;gap:12px;padding:16px;height:100vh}
+
+.header{grid-column:1/4;text-align:center;padding:4px 0}
+.header h1{font-size:20px;color:#58a6ff;letter-spacing:3px;font-weight:600}
+.header .subtitle{font-size:13px;color:#8b949e;margin-top:2px}
+
+/* Gauge panels */
+.gauge-panel{background:linear-gradient(145deg,#161b22,#0d1117);border:1px solid #21262d;border-radius:16px;display:flex;align-items:center;justify-content:center;padding:10px;box-shadow:0 4px 24px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.03)}
+
+svg.gauge text{font-family:'Segoe UI',system-ui,sans-serif}
+
+/* Bottom bar */
+.bottom{grid-column:1/4;display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.indicator{background:linear-gradient(145deg,#161b22,#0d1117);border:1px solid #21262d;border-radius:12px;padding:12px 8px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.3)}
+.indicator .label{font-size:10px;color:#8b949e;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.indicator .value{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* Controls */
+.controls{grid-column:1/4;display:flex;align-items:center;justify-content:center;gap:8px;padding:4px 0}
+.controls button{background:#21262d;color:#c9d1d9;border:1px solid #30363d;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;transition:all .15s}
+.controls button:hover{background:#30363d;border-color:#8b949e}
+.controls button.active{background:#1f6feb;border-color:#58a6ff;color:#fff}
+.controls input[type=range]{-webkit-appearance:none;width:340px;height:6px;background:#21262d;border-radius:3px;outline:none}
+.controls input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:#58a6ff;border-radius:50%;cursor:pointer;box-shadow:0 0 8px rgba(88,166,255,.4)}
+.controls .time-label{font-size:12px;color:#8b949e;min-width:50px;font-variant-numeric:tabular-nums}
+.controls .file-btn{margin-left:12px;background:#21262d;color:#58a6ff;border:1px solid #30363d;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:11px}
+.controls .file-btn:hover{background:#30363d}
+</style>
+</head>
+<body>
+
+<!-- File upload screen -->
+<div id="dropzone">
+  <h1>MERCEDES-BENZ S320 CAN DASHBOARD</h1>
+  <p>Load a CAN bus CSV capture to visualize</p>
+  <div class="drop-area" id="dropArea">
+    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm4 18H6V4h7v5h5v11zm-5-7v4h-2v-4H8l4-4 4 4h-3z"/></svg>
+    <span>Drag &amp; drop CSV file here</span>
+    <button class="btn" onclick="document.getElementById('fileInput').click()">Browse File</button>
+  </div>
+  <input type="file" id="fileInput" accept=".csv">
+  <div class="status" id="loadStatus"></div>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard">
+<div class="dash">
+  <div class="header">
+    <h1>MERCEDES-BENZ S320 (W220)</h1>
+    <div class="subtitle" id="fileInfo">CAN Bus Replay &mdash; <span id="elapsed">0:00</span> / <span id="totalTime">0:00</span></div>
+  </div>
+
+  <!-- RPM -->
+  <div class="gauge-panel">
+    <svg class="gauge" width="100%" height="100%" viewBox="0 0 320 240">
+      <defs>
+        <linearGradient id="rpmGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#58a6ff"/>
+          <stop offset="60%" stop-color="#3fb950"/>
+          <stop offset="85%" stop-color="#d29922"/>
+          <stop offset="100%" stop-color="#f85149"/>
+        </linearGradient>
+        <filter id="glow"><feGaussianBlur stdDeviation="3" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <path d="M 30 210 A 130 130 0 0 1 290 210" fill="none" stroke="#21262d" stroke-width="22" stroke-linecap="round"/>
+      <path id="rpmArc" d="M 30 210 A 130 130 0 0 1 290 210" fill="none" stroke="url(#rpmGrad)" stroke-width="22" stroke-linecap="round" stroke-dasharray="0 999" filter="url(#glow)"/>
+      <text x="22" y="228" fill="#484f58" font-size="11">0</text>
+      <text x="45" y="130" fill="#484f58" font-size="11">2</text>
+      <text x="145" y="82" fill="#484f58" font-size="11">4</text>
+      <text x="245" y="130" fill="#484f58" font-size="11">6</text>
+      <text x="275" y="228" fill="#f85149" font-size="11" font-weight="bold">8</text>
+      <text id="rpmVal" x="160" y="180" text-anchor="middle" fill="#e6edf3" font-size="52" font-weight="bold">0</text>
+      <text x="160" y="205" text-anchor="middle" fill="#484f58" font-size="14" font-weight="600" letter-spacing="2">RPM</text>
+    </svg>
+  </div>
+
+  <!-- Coolant -->
+  <div class="gauge-panel">
+    <svg class="gauge" width="100%" height="100%" viewBox="0 0 320 240">
+      <defs>
+        <linearGradient id="tempGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#58a6ff"/>
+          <stop offset="50%" stop-color="#3fb950"/>
+          <stop offset="80%" stop-color="#d29922"/>
+          <stop offset="100%" stop-color="#f85149"/>
+        </linearGradient>
+      </defs>
+      <path d="M 30 210 A 130 130 0 0 1 290 210" fill="none" stroke="#21262d" stroke-width="22" stroke-linecap="round"/>
+      <path id="tempArc" d="M 30 210 A 130 130 0 0 1 290 210" fill="none" stroke="url(#tempGrad)" stroke-width="22" stroke-linecap="round" stroke-dasharray="0 999" filter="url(#glow)"/>
+      <text x="18" y="228" fill="#484f58" font-size="11">-40</text>
+      <text x="55" y="130" fill="#484f58" font-size="11">0</text>
+      <text x="143" y="82" fill="#484f58" font-size="11">60</text>
+      <text x="230" y="130" fill="#484f58" font-size="11">100</text>
+      <text x="268" y="228" fill="#f85149" font-size="11" font-weight="bold">130</text>
+      <text id="tempVal" x="160" y="175" text-anchor="middle" fill="#58a6ff" font-size="52" font-weight="bold">0</text>
+      <text x="160" y="200" text-anchor="middle" fill="#484f58" font-size="12" font-weight="600" letter-spacing="1">COOLANT</text>
+      <text x="188" y="200" text-anchor="middle" fill="#484f58" font-size="12">&deg;C</text>
+    </svg>
+  </div>
+
+  <!-- Steering + Speed -->
+  <div class="gauge-panel">
+    <svg class="gauge" width="100%" height="100%" viewBox="0 0 320 240">
+      <circle cx="160" cy="115" r="72" fill="none" stroke="#21262d" stroke-width="12"/>
+      <g id="steerGroup" transform="rotate(0,160,115)">
+        <circle cx="160" cy="115" r="66" fill="none" stroke="#30363d" stroke-width="10" stroke-linecap="round"/>
+        <circle cx="160" cy="115" r="66" fill="none" stroke="#58a6ff" stroke-width="10" stroke-linecap="round" stroke-dasharray="20 999" stroke-dashoffset="-85" opacity="0.5" filter="url(#glow)"/>
+        <line x1="160" y1="49" x2="160" y2="72" stroke="#8b949e" stroke-width="5" stroke-linecap="round"/>
+        <line x1="94" y1="115" x2="117" y2="115" stroke="#8b949e" stroke-width="5" stroke-linecap="round"/>
+        <line x1="203" y1="115" x2="226" y2="115" stroke="#8b949e" stroke-width="5" stroke-linecap="round"/>
+        <circle cx="160" cy="115" r="14" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+      </g>
+      <text id="speedVal" x="160" y="122" text-anchor="middle" fill="#e6edf3" font-size="28" font-weight="bold">0</text>
+      <text x="160" y="138" text-anchor="middle" fill="#484f58" font-size="10" letter-spacing="1">km/h</text>
+      <text id="steerVal" x="160" y="222" text-anchor="middle" fill="#8b949e" font-size="14">0.0&deg;</text>
+    </svg>
+  </div>
+
+  <!-- Bottom indicators -->
+  <div class="bottom">
+    <div class="indicator">
+      <div class="label">MAF (g/s)</div>
+      <div class="value" id="mafVal" style="color:#58a6ff">0</div>
+    </div>
+    <div class="indicator">
+      <div class="label">Throttle %</div>
+      <div class="value" id="thrVal" style="color:#3fb950">0</div>
+    </div>
+    <div class="indicator">
+      <div class="label">Engine Load</div>
+      <div class="value" id="torqVal" style="color:#d29922">0</div>
+    </div>
+    <div class="indicator">
+      <div class="label">Doors</div>
+      <div class="value" id="doorVal" style="color:#484f58">--</div>
+    </div>
+    <div class="indicator">
+      <div class="label">Lights</div>
+      <div class="value" id="lightVal" style="color:#484f58">OFF</div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button id="btnPlay" class="active" onclick="togglePlay()">&#9654; Play</button>
+    <button onclick="setSpeed(0.5)">0.5x</button>
+    <button id="btn1x" class="active" onclick="setSpeed(1)">1x</button>
+    <button onclick="setSpeed(2)">2x</button>
+    <button onclick="setSpeed(5)">5x</button>
+    <button onclick="setSpeed(10)">10x</button>
+    <input type="range" id="scrubber" min="0" max="1" value="0" oninput="scrub(this.value)">
+    <span class="time-label" id="scrubTime">0:00</span>
+    <button class="file-btn" onclick="document.getElementById('fileInput2').click()">Load CSV</button>
+    <input type="file" id="fileInput2" accept=".csv" style="display:none">
+  </div>
+</div>
+</div>
+
+<script>
+let DATA = [];
+let idx = 0, playing = false, playSpeed = 1, timer = null;
+const maxRPM = 8000, maxTemp = 130, minTemp = -40;
+const arcLen = 408;
+
+function setArc(id, val, min, max) {
+  const pct = Math.max(0, Math.min(1, (val - min) / (max - min)));
+  document.getElementById(id).setAttribute('stroke-dasharray', (pct * arcLen) + ' ' + arcLen);
+}
+
+function formatTime(sec) {
+  const m = Math.floor(sec / 60), s = Math.floor(sec % 60);
+  return m + ':' + String(s).padStart(2, '0');
+}
+
+function decodeDoors(val) {
+  const bits = [];
+  if (val & 0x01) bits.push('FL');
+  if (val & 0x02) bits.push('FR');
+  if (val & 0x04) bits.push('RL');
+  if (val & 0x08) bits.push('RR');
+  if (val & 0x10) bits.push('TR');
+  return bits.length > 0 ? bits.join(' ') : 'CLOSED';
+}
+
+function decodeLights(l0, l1) {
+  const on = [];
+  if (l0 & 0x10) on.push('LOW');
+  if (l0 & 0x04) on.push('HIGH');
+  if (l1 & 0x20) on.push('FOG');
+  if (l1 & 0x10) on.push('PARK');
+  if (l1 & 0x01) on.push('TURN');
+  if (on.length === 0 && (l0 > 0 || l1 > 0)) on.push('ON');
+  return on.length > 0 ? on.join(' ') : 'OFF';
+}
+
+function update(i) {
+  if (i >= DATA.length) { i = 0; idx = 0; }
+  const [sec, rpm, coolant, speed, maf, throttle, steer, torque, doors, lt0, lt1] = DATA[i];
+
+  setArc('rpmArc', rpm, 0, maxRPM);
+  const rEl = document.getElementById('rpmVal');
+  rEl.textContent = Math.round(rpm);
+  rEl.setAttribute('fill', rpm > 5000 ? '#f85149' : rpm > 3000 ? '#d29922' : '#e6edf3');
+
+  setArc('tempArc', coolant, minTemp, maxTemp);
+  const tEl = document.getElementById('tempVal');
+  tEl.textContent = Math.round(coolant);
+  tEl.setAttribute('fill', coolant > 105 ? '#f85149' : coolant > 90 ? '#d29922' : coolant > 0 ? '#3fb950' : '#58a6ff');
+
+  document.getElementById('speedVal').textContent = Math.round(speed);
+  const cs = Math.max(-180, Math.min(180, steer));
+  document.getElementById('steerGroup').setAttribute('transform', 'rotate(' + cs + ',160,115)');
+  document.getElementById('steerVal').textContent = steer.toFixed(1) + '°';
+
+  const mafEl = document.getElementById('mafVal');
+  mafEl.textContent = maf > 0 ? maf.toFixed(1) : '0';
+  mafEl.style.color = maf > 300 ? '#d29922' : '#58a6ff';
+
+  document.getElementById('thrVal').textContent = throttle.toFixed(1);
+  document.getElementById('torqVal').textContent = torque;
+
+  const doorStr = decodeDoors(doors);
+  const doorEl = document.getElementById('doorVal');
+  doorEl.textContent = doorStr;
+  doorEl.style.color = doorStr === 'CLOSED' ? '#3fb950' : '#d29922';
+
+  const lightStr = decodeLights(lt0, lt1);
+  const lightEl = document.getElementById('lightVal');
+  lightEl.textContent = lightStr;
+  lightEl.style.color = lightStr === 'OFF' ? '#484f58' : '#d29922';
+
+  document.getElementById('elapsed').textContent = formatTime(sec);
+  document.getElementById('scrubber').value = i;
+  document.getElementById('scrubTime').textContent = formatTime(sec);
+}
+
+function tick() { update(idx); idx++; if (idx >= DATA.length) idx = 0; }
+
+function togglePlay() {
+  playing = !playing;
+  const btn = document.getElementById('btnPlay');
+  btn.innerHTML = playing ? '&#9646;&#9646; Pause' : '&#9654; Play';
+  playing ? (btn.classList.add('active'), startTimer()) : (btn.classList.remove('active'), clearInterval(timer));
+}
+
+function setSpeed(s) {
+  playSpeed = s;
+  document.querySelectorAll('.controls button').forEach(b => {
+    if (b.textContent.includes('x')) b.classList.toggle('active', b.textContent.trim() === s + 'x');
+  });
+  if (playing) { clearInterval(timer); startTimer(); }
+}
+
+function startTimer() { clearInterval(timer); timer = setInterval(tick, 2000 / playSpeed); }
+function scrub(val) { idx = parseInt(val); update(idx); }
+
+// CSV Parser
+function parseCSV(text) {
+  const lines = text.split('\n');
+  if (lines.length < 10) { alert('File too small'); return; }
+
+  // Detect timestamp type
+  let bigMin = Infinity, hasBig = false;
+  for (let i = 1; i < Math.min(lines.length, 1000); i++) {
+    const ts = parseFloat(lines[i].split(',')[0]);
+    if (ts > 1e12) { hasBig = true; if (ts < bigMin) bigMin = ts; }
+  }
+  if (!hasBig) bigMin = parseFloat(lines[1].split(',')[0]);
+
+  const state = {rpm:0,coolant:0,speed:0,maf:0,throttle:0,steer:0,torque:0,doors:0,lt0:0,lt1:0};
+  const result = [];
+  let curWindow = -1, lastBigTs = bigMin;
+
+  for (let i = 1; i < lines.length; i++) {
+    const f = lines[i].split(',');
+    if (f.length < 14) continue;
+
+    const ts = parseFloat(f[0]);
+    if (hasBig && ts > 1e12) lastBigTs = ts;
+    const ref = hasBig ? lastBigTs : ts;
+    const sec = Math.floor((ref - bigMin) / 1e6);
+    const window = Math.floor(sec / 2) * 2;
+
+    if (window > curWindow) {
+      if (curWindow >= 0) {
+        result.push([curWindow, state.rpm, state.coolant, state.speed, state.maf, state.throttle, state.steer, state.torque, state.doors, state.lt0, state.lt1]);
+      }
+      curWindow = window;
+    }
+
+    const cid = f[1];
+    const d = [];
+    for (let j = 6; j <= 13; j++) d.push(parseInt(f[j], 16) || 0);
+
+    if ((cid === '000007E8' || cid === '000007E9') && d[1] === 0x41) {
+      const p = d[2];
+      if (p === 0x0C) state.rpm = (d[3] * 256 + d[4]) / 4;
+      else if (p === 0x05) state.coolant = d[3] - 40;
+      else if (p === 0x0D) state.speed = d[3];
+      else if (p === 0x10) state.maf = Math.round((d[3] * 256 + d[4]) / 100 * 10) / 10;
+      else if (p === 0x11) state.throttle = Math.round(d[3] * 100 / 255 * 10) / 10;
+    }
+    if (cid === '00000007') {
+      let a = d[0] * 256 + d[1]; if (a > 32767) a -= 65536;
+      state.steer = Math.round(a * 0.1 * 10) / 10;
+    }
+    if (cid === '00000201') state.torque = d[0];
+    if (cid === '00000375') state.doors = d[1];
+    if (cid === '0000039F') { state.lt0 = d[0]; state.lt1 = d[1]; }
+  }
+  result.push([curWindow, state.rpm, state.coolant, state.speed, state.maf, state.throttle, state.steer, state.torque, state.doors, state.lt0, state.lt1]);
+
+  return result;
+}
+
+function loadData(data) {
+  DATA = data;
+  idx = 0;
+  document.getElementById('dropzone').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  document.getElementById('scrubber').max = DATA.length - 1;
+  const lastSec = DATA[DATA.length - 1][0];
+  document.getElementById('totalTime').textContent = formatTime(lastSec);
+  update(0);
+  if (!playing) togglePlay();
+}
+
+function handleFile(file) {
+  if (!file) return;
+  const status = document.getElementById('loadStatus');
+  status.textContent = 'Loading ' + file.name + ' (' + (file.size / 1024 / 1024).toFixed(1) + ' MB)...';
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    status.textContent = 'Parsing CAN data...';
+    setTimeout(() => {
+      const data = parseCSV(e.target.result);
+      if (data && data.length > 2) {
+        status.textContent = 'Loaded ' + data.length + ' data points';
+        loadData(data);
+      } else {
+        status.textContent = 'Error: no valid CAN data found in file';
+      }
+    }, 50);
+  };
+  reader.readAsText(file);
+}
+
+// File input handlers
+document.getElementById('fileInput').addEventListener('change', e => handleFile(e.target.files[0]));
+document.getElementById('fileInput2').addEventListener('change', e => { handleFile(e.target.files[0]); });
+
+// Drag and drop
+const da = document.getElementById('dropArea');
+da.addEventListener('dragover', e => { e.preventDefault(); da.classList.add('dragover'); });
+da.addEventListener('dragleave', () => da.classList.remove('dragover'));
+da.addEventListener('drop', e => { e.preventDefault(); da.classList.remove('dragover'); handleFile(e.dataTransfer.files[0]); });
+</script>
+</body>
+</html>
