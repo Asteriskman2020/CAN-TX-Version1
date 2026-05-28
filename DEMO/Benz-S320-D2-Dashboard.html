@@ -1,0 +1,355 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Benz S320 D2 Dashboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1a2e;color:#e0e0e0;font-family:'Segoe UI',sans-serif;overflow:hidden;height:100vh}
+.dash{display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:auto 1fr auto;gap:10px;padding:15px;height:100vh}
+.header{grid-column:1/4;text-align:center;padding:5px}
+.header h1{font-size:22px;color:#c0c0c0;letter-spacing:3px}
+.header .time{font-size:14px;color:#888}
+
+.gauge-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center}
+svg.gauge{filter:drop-shadow(0 0 10px rgba(0,0,0,0.5))}
+
+.bottom{grid-column:1/4;display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:5px}
+.indicator{background:#16213e;border-radius:8px;padding:10px;text-align:center;border:1px solid #333}
+.indicator .label{font-size:11px;color:#888;text-transform:uppercase;margin-bottom:4px}
+.indicator .value{font-size:18px;font-weight:bold}
+
+.controls{grid-column:1/4;text-align:center;padding:5px}
+.controls button{background:#16213e;color:#e0e0e0;border:1px solid #444;padding:8px 20px;margin:0 5px;border-radius:5px;cursor:pointer;font-size:13px}
+.controls button:hover{background:#1a3a5c}
+.controls button.active{background:#0f3460;border-color:#4cc9f0}
+.controls .slider-wrap{display:inline-block;margin-left:15px;vertical-align:middle}
+.controls input[type=range]{width:300px;vertical-align:middle}
+.controls .time-label{font-size:13px;color:#aaa;margin-left:8px}
+
+.on{color:#4cc9f0}.off{color:#555}
+.warn{color:#f7b731}
+.hot{color:#fc5c65}
+.cool{color:#4cc9f0}
+</style>
+</head>
+<body>
+<div class="dash">
+  <div class="header">
+    <h1>MERCEDES-BENZ S320 (W220)</h1>
+    <div class="time">D2 Capture Replay &mdash; <span id="elapsed">0:00</span> / 1:49</div>
+  </div>
+
+  <!-- RPM Gauge -->
+  <div class="gauge-wrap">
+    <svg class="gauge" width="280" height="200" viewBox="0 0 280 200">
+      <defs>
+        <linearGradient id="rpmGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#4cc9f0"/>
+          <stop offset="70%" stop-color="#f7b731"/>
+          <stop offset="100%" stop-color="#fc5c65"/>
+        </linearGradient>
+      </defs>
+      <!-- Background arc -->
+      <path d="M 30 180 A 120 120 0 0 1 250 180" fill="none" stroke="#2a2a4a" stroke-width="18" stroke-linecap="round"/>
+      <!-- Value arc -->
+      <path id="rpmArc" d="M 30 180 A 120 120 0 0 1 250 180" fill="none" stroke="url(#rpmGrad)" stroke-width="18" stroke-linecap="round" stroke-dasharray="0 999"/>
+      <!-- Ticks -->
+      <text x="25" y="195" fill="#666" font-size="11">0</text>
+      <text x="55" y="105" fill="#666" font-size="11">2</text>
+      <text x="130" y="65" fill="#666" font-size="11">4</text>
+      <text x="205" y="105" fill="#666" font-size="11">6</text>
+      <text x="240" y="195" fill="#666" font-size="11">8</text>
+      <!-- Value -->
+      <text id="rpmVal" x="140" y="155" text-anchor="middle" fill="#fff" font-size="42" font-weight="bold">0</text>
+      <text x="140" y="175" text-anchor="middle" fill="#888" font-size="13">RPM</text>
+    </svg>
+  </div>
+
+  <!-- Coolant Temp Gauge -->
+  <div class="gauge-wrap">
+    <svg class="gauge" width="280" height="200" viewBox="0 0 280 200">
+      <defs>
+        <linearGradient id="tempGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#4cc9f0"/>
+          <stop offset="50%" stop-color="#4cc9f0"/>
+          <stop offset="80%" stop-color="#f7b731"/>
+          <stop offset="100%" stop-color="#fc5c65"/>
+        </linearGradient>
+      </defs>
+      <path d="M 30 180 A 120 120 0 0 1 250 180" fill="none" stroke="#2a2a4a" stroke-width="18" stroke-linecap="round"/>
+      <path id="tempArc" d="M 30 180 A 120 120 0 0 1 250 180" fill="none" stroke="url(#tempGrad)" stroke-width="18" stroke-linecap="round" stroke-dasharray="0 999"/>
+      <text x="25" y="195" fill="#666" font-size="11">-40</text>
+      <text x="65" y="105" fill="#666" font-size="11">0</text>
+      <text x="130" y="65" fill="#666" font-size="11">60</text>
+      <text x="195" y="105" fill="#666" font-size="11">100</text>
+      <text x="235" y="195" fill="#666" font-size="11">130</text>
+      <text id="tempVal" x="140" y="150" text-anchor="middle" fill="#4cc9f0" font-size="42" font-weight="bold">0</text>
+      <text x="140" y="175" text-anchor="middle" fill="#888" font-size="13">COOLANT &deg;C</text>
+    </svg>
+  </div>
+
+  <!-- Steering + Speed -->
+  <div class="gauge-wrap">
+    <svg class="gauge" width="280" height="200" viewBox="0 0 280 200">
+      <!-- Steering wheel -->
+      <circle cx="140" cy="100" r="60" fill="none" stroke="#2a2a4a" stroke-width="10"/>
+      <circle cx="140" cy="100" r="60" fill="none" stroke="#4cc9f0" stroke-width="10" stroke-dasharray="30 999" stroke-dashoffset="0" opacity="0.3"/>
+      <g id="steerGroup" transform="rotate(0,140,100)">
+        <circle cx="140" cy="100" r="55" fill="none" stroke="#555" stroke-width="8" stroke-linecap="round"/>
+        <line x1="140" y1="45" x2="140" y2="70" stroke="#888" stroke-width="4" stroke-linecap="round"/>
+        <line x1="85" y1="100" x2="110" y2="100" stroke="#888" stroke-width="4" stroke-linecap="round"/>
+        <line x1="170" y1="100" x2="195" y2="100" stroke="#888" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="140" cy="100" r="12" fill="#333" stroke="#555" stroke-width="2"/>
+      </g>
+      <text id="steerVal" x="140" y="185" text-anchor="middle" fill="#aaa" font-size="14">0.0&deg;</text>
+      <!-- Speed overlay -->
+      <text id="speedVal" x="140" y="108" text-anchor="middle" fill="#fff" font-size="22" font-weight="bold">0</text>
+      <text x="140" y="122" text-anchor="middle" fill="#888" font-size="10">km/h</text>
+    </svg>
+  </div>
+
+  <!-- Bottom indicators -->
+  <div class="bottom">
+    <div class="indicator">
+      <div class="label">MAF (g/s)</div>
+      <div class="value" id="mafVal">0</div>
+    </div>
+    <div class="indicator">
+      <div class="label">Throttle %</div>
+      <div class="value" id="thrVal">0</div>
+    </div>
+    <div class="indicator">
+      <div class="label">Engine Torque</div>
+      <div class="value" id="torqVal">0</div>
+    </div>
+    <div class="indicator">
+      <div class="label">Doors</div>
+      <div class="value" id="doorVal" class="off">--</div>
+    </div>
+    <div class="indicator">
+      <div class="label">Lights</div>
+      <div class="value" id="lightVal" class="off">OFF</div>
+    </div>
+  </div>
+
+  <!-- Playback controls -->
+  <div class="controls">
+    <button id="btnPlay" class="active" onclick="togglePlay()">&#9654; Play</button>
+    <button onclick="setSpeed(0.5)">0.5x</button>
+    <button id="btn1x" class="active" onclick="setSpeed(1)">1x</button>
+    <button onclick="setSpeed(2)">2x</button>
+    <button onclick="setSpeed(5)">5x</button>
+    <span class="slider-wrap">
+      <input type="range" id="scrubber" min="0" max="370" value="0" oninput="scrub(this.value)">
+      <span class="time-label" id="scrubTime">0:00</span>
+    </span>
+  </div>
+</div>
+
+<script>
+// [sec, rpm, coolant, speed, maf, throttle, steer, torque, doors, lt0, lt1]
+const DATA=[
+[0,721,0,0,222.7,0,13.3,125,87,18,13],
+[2,721,88,1,289.3,2.7,13.3,181,87,18,13],
+[4,949,92,4,435.2,2.7,13.3,77,87,18,13],
+[6,858,89,7,435.2,3.1,13.3,253,87,18,13],
+[8,1004,89,7,583.7,3.5,13.3,201,87,18,13],
+[10,1230,89,10,583.7,3.5,13.3,226,87,18,13],
+[12,857,89,13,583.7,3.5,13.3,23,87,18,14],
+[14,857,89,12,583.7,3.5,13.3,10,87,18,14],
+[16,738,89,3,583.7,3.5,13.3,116,87,18,14],
+[18,738,89,1,583.7,3.5,13.3,147,87,18,14],
+[20,759,93,0,583.7,2.7,13.3,151,87,18,14],
+[22,814,89,1,578.6,3.1,13.3,178,87,18,14],
+[24,732,89,3,222.7,2.7,13.3,17,87,18,14],
+[26,1368,89,3,583.7,6.3,13.3,192,87,18,14],
+[28,1553,89,16,583.7,7.8,13.3,92,87,18,14],
+[30,1767,90,18,583.7,7.8,13.3,154,87,18,14],
+[32,1767,90,31,583.7,7.8,13.3,204,87,18,14],
+[34,1629,90,33,581.1,7.8,13.3,81,87,18,14],
+[36,1702,94,43,581.1,7.8,13.3,181,87,18,14],
+[38,1550,94,47,581.1,7.8,13.3,110,87,18,14],
+[40,1603,90,58,581.1,8.6,13.3,202,87,18,14],
+[42,1394,91,55,581.1,7.5,13.3,131,87,18,14],
+[44,1396,91,60,581.1,6.7,13.3,150,87,18,14],
+[46,1501,91,64,578.6,7.5,13.3,7,87,18,14],
+[48,1525,91,72,578.6,7.5,13.3,104,87,18,14],
+[50,1559,91,72,578.6,7.5,13.3,172,87,18,14],
+[52,1559,95,73,578.6,7.5,13.3,128,87,18,14],
+[54,1527,91,73,578.6,7.5,13.3,151,87,18,14],
+[56,1605,91,73,576,5.5,13.3,129,87,18,14],
+[58,1622,91,73,576,5.5,13.3,144,87,18,14],
+[60,1622,95,76,576,9.8,13.3,24,87,18,14],
+[62,1505,91,83,576,9,13.3,135,87,18,14],
+[64,1483,91,82,576,8.6,13.3,13,87,18,14],
+[66,1563,91,83,576,8.6,13.3,72,87,18,14],
+[68,1263,91,82,576,4.7,13.3,157,87,18,14],
+[70,1153,91,80,576,4.7,13.3,144,87,18,15],
+[72,1171,91,69,576,4.7,13.3,178,87,18,15],
+[74,1171,95,64,576,4.3,13.3,54,87,18,15],
+[76,1081,91,60,576,3.5,13.3,46,87,18,15],
+[78,1166,91,60,578.6,4.3,13.3,161,87,18,15],
+[80,1166,94,47,578.6,3.5,13.3,116,87,18,15],
+[82,985,90,31,578.6,3.5,13.3,146,87,18,15],
+[84,781,90,19,578.6,2.7,13.3,105,87,18,15],
+[86,781,90,14,222.7,2.4,13.3,220,87,18,15],
+[88,781,90,10,483.8,3.1,13.3,246,87,18,15],
+[90,748,90,6,483.8,2.4,13.3,183,87,18,15],
+[92,756,90,1,483.8,2.4,13.3,248,87,18,15],
+[94,759,90,1,222.7,2.7,13.3,248,87,18,15],
+[96,758,90,0,222.7,2.7,13.3,248,87,18,15],
+[98,759,90,0,222.7,2.7,13.3,248,87,18,15],
+[100,758,90,0,222.7,2.7,13.3,248,87,18,15],
+[102,759,91,0,222.7,2.7,13.3,248,87,18,15],
+[104,759,94,0,102.4,1.6,13.3,248,87,18,15],
+[106,759,94,0,102.4,0.8,13.3,248,87,18,15],
+[108,759,94,0,102.4,0.4,13.3,248,87,18,15]
+];
+
+</script>
+<script>
+let idx = 0, playing = true, playSpeed = 1, timer = null;
+const maxRPM = 8000, maxTemp = 130, minTemp = -40;
+const arcLen = 345.6; // circumference of the gauge arc
+
+function polarToCart(cx, cy, r, deg) {
+  const rad = (deg - 180) * Math.PI / 180;
+  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+}
+
+function setArc(id, val, min, max) {
+  const pct = Math.max(0, Math.min(1, (val - min) / (max - min)));
+  document.getElementById(id).setAttribute('stroke-dasharray', (pct * arcLen) + ' ' + arcLen);
+}
+
+function formatTime(sec) {
+  const m = Math.floor(sec / 60), s = sec % 60;
+  return m + ':' + String(s).padStart(2, '0');
+}
+
+function decodeDoors(val) {
+  const bits = [];
+  if (val & 0x01) bits.push('FL');
+  if (val & 0x02) bits.push('FR');
+  if (val & 0x04) bits.push('RL');
+  if (val & 0x08) bits.push('RR');
+  if (val & 0x10) bits.push('TR');
+  return bits.length > 0 ? bits.join(' ') : 'ALL CLOSED';
+}
+
+function decodeLights(l0, l1) {
+  const on = [];
+  if (l0 & 0x10) on.push('LOW');
+  if (l0 & 0x04) on.push('HIGH');
+  if (l1 & 0x20) on.push('FOG');
+  if (l1 & 0x10) on.push('PARK');
+  if (l1 & 0x01) on.push('TURN');
+  if (l0 > 0 || l1 > 0) { if (on.length === 0) on.push('ON'); }
+  return on.length > 0 ? on.join(' ') : 'OFF';
+}
+
+function update(i) {
+  if (i >= DATA.length) { i = 0; idx = 0; }
+  const d = DATA[i];
+  const [sec, rpm, coolant, speed, maf, throttle, steer, torque, doors, lt0, lt1] = d;
+
+  // RPM
+  setArc('rpmArc', rpm, 0, maxRPM);
+  document.getElementById('rpmVal').textContent = Math.round(rpm);
+
+  // Coolant
+  setArc('tempArc', coolant, minTemp, maxTemp);
+  const tEl = document.getElementById('tempVal');
+  tEl.textContent = Math.round(coolant);
+  tEl.setAttribute('fill', coolant > 100 ? '#fc5c65' : coolant > 80 ? '#f7b731' : '#4cc9f0');
+
+  // Speed
+  document.getElementById('speedVal').textContent = Math.round(speed);
+
+  // Steering
+  const clampedSteer = Math.max(-180, Math.min(180, steer));
+  document.getElementById('steerGroup').setAttribute('transform', 'rotate(' + clampedSteer + ',140,100)');
+  document.getElementById('steerVal').textContent = steer.toFixed(1) + 'Â°';
+
+  // MAF
+  const mafEl = document.getElementById('mafVal');
+  mafEl.textContent = maf > 0 ? maf.toFixed(1) : '0';
+  mafEl.style.color = maf > 200 ? '#f7b731' : '#4cc9f0';
+
+  // Throttle
+  document.getElementById('thrVal').textContent = throttle.toFixed(1);
+
+  // Torque
+  document.getElementById('torqVal').textContent = torque;
+
+  // Doors
+  const doorStr = decodeDoors(doors);
+  const doorEl = document.getElementById('doorVal');
+  doorEl.textContent = doorStr;
+  doorEl.style.color = doorStr === 'ALL CLOSED' ? '#4cc9f0' : '#f7b731';
+
+  // Lights
+  const lightStr = decodeLights(lt0, lt1);
+  const lightEl = document.getElementById('lightVal');
+  lightEl.textContent = lightStr;
+  lightEl.style.color = lightStr === 'OFF' ? '#555' : '#f7b731';
+
+  // Time
+  document.getElementById('elapsed').textContent = formatTime(sec);
+  document.getElementById('scrubber').value = i;
+  document.getElementById('scrubTime').textContent = formatTime(sec);
+}
+
+function tick() {
+  update(idx);
+  idx++;
+  if (idx >= DATA.length) idx = 0;
+}
+
+function togglePlay() {
+  playing = !playing;
+  const btn = document.getElementById('btnPlay');
+  if (playing) {
+    btn.textContent = 'â¸ Pause';
+    btn.classList.add('active');
+    startTimer();
+  } else {
+    btn.textContent = 'â–¶ Play';
+    btn.classList.remove('active');
+    clearInterval(timer);
+  }
+}
+
+function setSpeed(s) {
+  playSpeed = s;
+  document.querySelectorAll('.controls button').forEach(b => {
+    if (b.textContent.includes('x')) b.classList.remove('active');
+  });
+  const label = s + 'x';
+  document.querySelectorAll('.controls button').forEach(b => {
+    if (b.textContent.trim() === label) b.classList.add('active');
+  });
+  if (playing) { clearInterval(timer); startTimer(); }
+}
+
+function startTimer() {
+  clearInterval(timer);
+  timer = setInterval(tick, 2000 / playSpeed);
+}
+
+function scrub(val) {
+  idx = parseInt(val);
+  update(idx);
+}
+
+// Load data and start
+window.addEventListener('load', () => {
+  document.getElementById('scrubber').max = DATA.length - 1;
+  togglePlay();
+});
+</script>
+</body>
+</html>
+
+
