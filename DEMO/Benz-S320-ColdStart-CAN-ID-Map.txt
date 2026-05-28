@@ -1,0 +1,57 @@
+================================================================================
+  Mercedes-Benz S320 (W220) — CAN ID Map — Cold Start Capture
+================================================================================
+  Source: "Benz cold start.csv" — last 20% (92,466 of 462,330 frames)
+  33 unique CAN IDs — Bus speed: 500 kbps — All standard 11-bit
+================================================================================
+
+CAN ID  | DLC | Module / Function              | Sample Data              | Description
+--------|-----|--------------------------------|--------------------------|--------------------------------------------
+0x001   |  8  | ME (Engine Management)         | 4C C0 9F 94 59 00 37 92 | Engine status, ignition state, engine load
+0x003   |  8  | ME (Engine ECU)                | 10 14 10 00 04 FF B0 67 | Engine RPM, coolant temperature, throttle
+0x005   |  8  | EGS (Transmission ECU)         | 00 10 00 00 11 00 40 9A | Vehicle speed, gear position, torque request
+0x007   |  6  | LWS (Steering Angle Sensor)    | 00 85 00 00 3A D4       | Steering wheel angle, rotation rate
+0x105   |  8  | ESP (Electronic Stability)     | 02 FC 81 00 00 8C 93 48 | Lateral acceleration, yaw rate, brake pressure
+0x10C   |  8  | ME (Engine RPM — OBD)          | 00 00 00 00 00 00 00 00 | Engine RPM (PID 0x0C), idle/cranking state
+0x12D   |  8  | ESP (Wheel Speed Sensors)      | 0F 0F 00 00 10 B3 07 21 | FL, FR, RL, RR individual wheel speeds
+0x19F   |  8  | ESP / ABS                      | 00 00 8F 15 9A 16 A5 E4 | ABS/ESP activation flags, brake status
+0x1C1   |  4  | EGS (Gear Status)              | 00 00 00 00             | Current gear, shift request, lock-up status
+0x201   |  8  | ME (Engine Torque)             | 01 00 00 00 00 00 00 00 | Actual torque — near zero (cold idle)
+0x203   |  8  | ABC/AIRMATIC (Suspension)      | 00 00 00 00 00 00 00 00 | 4-corner ride height — not yet initialized
+0x205   |  8  | KLA (A/C Compressor)           | 82 8C 00 00 00 00 00 00 | Compressor state, refrigerant pressure
+0x206   |  8  | KLA (Temp Sensors Interior)    | 00 00 BE A2 00 25 FA F1 | Cabin temp, evaporator temp, heater temp
+0x207   |  8  | KLA (Temp Sensors Exterior)    | 00 00 1D 41 83 DB 3F E1 | Ambient temp, sun intensity, humidity
+0x245   |  8  | IC (Instrument Cluster)        | 7F BC 80 97 85 81 40 78 | Odometer, fuel level, warning lamps
+0x375   |  8  | TSG (Door Module)              | 00 57 35 35 3F 07 00 00 | Door open/closed, window position, locks
+0x39D   |  8  | SBV (Seat Control Module)      | 89 7F 00 52 00 08 00 4F | Seat position, heating, ventilation
+0x39F   |  8  | SAM-V (Exterior Lighting)      | 14 37 1B 10 01 19 02 FF | Head/tail/brake/turn lights, fog lamps
+0x3E3   |  8  | SAM-F (Signal Acquisition Frt) | FF FF FF FF FF FF FF FF | Front SAM status — all OK (idle)
+0x3E5   |  8  | SAM-H (Signal Acquisition Rear)| FF FF FF FF FF FF FF FF | Rear SAM status — all OK (idle)
+0x3E7   |  8  | SAM-L (Signal Acquisition Left)| FF FF FF FF FF FF FF FF | Left SAM status — all OK (idle)
+0x3E9   |  8  | SAM-R (Signal Acq. Right)      | FF FF FF FF FF FF FF FF | Right SAM status — all OK (idle)
+0x3EB   |  8  | SAM (Signal Acquisition Misc)  | FF FF FF FF FF FF FF FF | Auxiliary SAM module — all OK (idle)
+0x3F4   |  8  | PDC (Parktronic)               | 00 00 00 00 FF FF 00 00 | Parking sensor distances, F/R zones
+0x3F6   |  5  | EIS (Keyless Go / Ignition)    | 02 00 00 00 00          | Key status, immobilizer, start authorization
+0x400   |  8  | KLA (HVAC Control)             | FC 00 3F FF FF FF FF FF | Blower speed, vent mode, temp set-point
+0x766   |  8  | Diagnostic (ECU Response)      | 02 A3 02 C5 02 4B 00 00 | Extended diagnostic session response
+0x75E   |  8  | Diagnostic (AAM Response)      | 06 02 00 10 70 08 86 00 | Active body module diagnostic response
+0x76E   |  8  | Diagnostic (Misc Response)     | 01 05 00 00 00 00 00 00 | Supplemental diagnostic data
+0x776   |  8  | Diagnostic (EGS Response)      | 00 04 00 00 00 00 00 00 | Transmission diagnostic response
+0x7DF   |  8  | OBD-II (Broadcast Request)     | 02 01 10 00 00 00 00 00 | OBD-II functional request (SID 01, PID 10)
+0x7E8   |  8  | OBD-II (ECM/PCM Response)      | 03 41 10 58 00 00 00 00 | ECM response: PID 10 MAF = 8.8 g/s (cold idle)
+0x7E9   |  8  | OBD-II (TCM Response)          | 04 41 0C 0B E4 FF FF FF | TCM response: PID 0C RPM = 761 RPM (cold idle)
+
+================================================================================
+  Cold Start vs Normal Running — Key Differences
+================================================================================
+  CAN ID | Cold Start Value          | Normal (d2.csv)           | Meaning
+  -------|---------------------------|---------------------------|------------------
+  0x003  | 10 14 10 00 04 FF B0 67   | 11 8C 11 90 04 FF E0 20  | Lower RPM, colder coolant
+  0x005  | 00 10 00 00 11 00 40 9A   | 00 10 00 02 09 00 A0 1B  | Vehicle stationary, Park
+  0x201  | 01 00 00 00 00 00 00 00   | 83 F6 E1 6A 00 00 00 00  | Near-zero torque vs loaded
+  0x203  | 00 00 00 00 00 00 00 00   | 40 DA 40 C2 40 DD 40 C6  | Suspension not init vs leveled
+  0x7E8  | PID 10: MAF 8.8 g/s      | PID 05: Coolant 94°C     | Cold idle airflow vs warm temp
+  0x7E9  | PID 0C: RPM 761           | PID 05: Coolant 90°C     | Cold idle RPM vs warm temp
+  0x39D  | 89 7F 00 52 00 08 00 4F   | 28 7F 02 3F 00 08 00 37  | Seat heater ON (cold weather)
+  0x39F  | 14 37 1B 10 01 19 02 FF   | 12 0F 13 1A 01 19 02 FF  | More lights on (DRL/cold start)
+================================================================================
