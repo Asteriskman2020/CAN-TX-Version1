@@ -1,0 +1,210 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Ford Ranger T6 Dashboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d1117;color:#e6edf3;font-family:'Segoe UI',system-ui,sans-serif;height:100vh;overflow:hidden}
+.dash{display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:auto 1fr auto auto;gap:12px;padding:16px;height:100vh}
+.header{grid-column:1/4;text-align:center;padding:4px 0}
+.header h1{font-size:22px;color:#3d8bfd;letter-spacing:3px;font-weight:700}
+.header .subtitle{font-size:13px;color:#8b949e;margin-top:2px}
+.gauge-panel{background:linear-gradient(145deg,#161b22,#0d1117);border:1px solid #21262d;border-radius:16px;display:flex;align-items:center;justify-content:center;padding:10px;box-shadow:0 4px 24px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.03)}
+svg.gauge text{font-family:'Segoe UI',system-ui,sans-serif}
+.bottom{grid-column:1/4;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.indicator{background:linear-gradient(145deg,#161b22,#0d1117);border:1px solid #21262d;border-radius:12px;padding:14px 8px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.3)}
+.indicator .label{font-size:10px;color:#8b949e;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.indicator .value{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
+.controls{grid-column:1/4;display:flex;align-items:center;justify-content:center;gap:8px;padding:4px 0}
+.controls button{background:#21262d;color:#c9d1d9;border:1px solid #30363d;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;transition:all .15s}
+.controls button:hover{background:#30363d;border-color:#8b949e}
+.controls button.active{background:#1f6feb;border-color:#58a6ff;color:#fff}
+.controls input[type=range]{-webkit-appearance:none;width:380px;height:6px;background:#21262d;border-radius:3px;outline:none}
+.controls input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:#3d8bfd;border-radius:50%;cursor:pointer;box-shadow:0 0 8px rgba(61,139,253,.4)}
+.controls .time-label{font-size:12px;color:#8b949e;min-width:50px;font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<div class="dash">
+  <div class="header">
+    <h1>FORD RANGER T6</h1>
+    <div class="subtitle">Speed on Road &mdash; <span id="elapsed">0:00</span> / <span id="totalTime">4:26</span></div>
+  </div>
+
+  <!-- RPM -->
+  <div class="gauge-panel">
+    <svg class="gauge" width="100%" height="100%" viewBox="0 0 320 240">
+      <defs>
+        <linearGradient id="rpmGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#3d8bfd"/>
+          <stop offset="55%" stop-color="#3fb950"/>
+          <stop offset="80%" stop-color="#d29922"/>
+          <stop offset="100%" stop-color="#f85149"/>
+        </linearGradient>
+        <filter id="glow"><feGaussianBlur stdDeviation="3" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <path d="M 30 210 A 130 130 0 0 1 290 210" fill="none" stroke="#21262d" stroke-width="22" stroke-linecap="round"/>
+      <path id="rpmArc" d="M 30 210 A 130 130 0 0 1 290 210" fill="none" stroke="url(#rpmGrad)" stroke-width="22" stroke-linecap="round" stroke-dasharray="0 999" filter="url(#glow)"/>
+      <text x="22" y="228" fill="#484f58" font-size="11">0</text>
+      <text x="50" y="130" fill="#484f58" font-size="11">1</text>
+      <text x="145" y="82" fill="#484f58" font-size="11">2.5</text>
+      <text x="238" y="130" fill="#484f58" font-size="11">4</text>
+      <text x="268" y="228" fill="#f85149" font-size="11" font-weight="bold">5</text>
+      <text x="160" y="207" text-anchor="middle" fill="#484f58" font-size="13" font-weight="600" letter-spacing="2">x1000 RPM</text>
+      <text id="rpmVal" x="160" y="180" text-anchor="middle" fill="#e6edf3" font-size="52" font-weight="bold">0</text>
+    </svg>
+  </div>
+
+  <!-- Speed -->
+  <div class="gauge-panel">
+    <svg class="gauge" width="100%" height="100%" viewBox="0 0 320 240">
+      <defs>
+        <linearGradient id="spdGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#3fb950"/>
+          <stop offset="60%" stop-color="#3d8bfd"/>
+          <stop offset="85%" stop-color="#d29922"/>
+          <stop offset="100%" stop-color="#f85149"/>
+        </linearGradient>
+      </defs>
+      <path d="M 30 210 A 130 130 0 0 1 290 210" fill="none" stroke="#21262d" stroke-width="22" stroke-linecap="round"/>
+      <path id="spdArc" d="M 30 210 A 130 130 0 0 1 290 210" fill="none" stroke="url(#spdGrad)" stroke-width="22" stroke-linecap="round" stroke-dasharray="0 999" filter="url(#glow)"/>
+      <text x="22" y="228" fill="#484f58" font-size="11">0</text>
+      <text x="50" y="130" fill="#484f58" font-size="11">40</text>
+      <text x="140" y="82" fill="#484f58" font-size="11">80</text>
+      <text x="235" y="130" fill="#484f58" font-size="11">120</text>
+      <text x="262" y="228" fill="#f85149" font-size="11" font-weight="bold">160</text>
+      <text x="160" y="207" text-anchor="middle" fill="#484f58" font-size="14" font-weight="600" letter-spacing="2">km/h</text>
+      <text id="speedVal" x="160" y="178" text-anchor="middle" fill="#e6edf3" font-size="60" font-weight="bold">0</text>
+    </svg>
+  </div>
+
+  <!-- Coolant -->
+  <div class="gauge-panel">
+    <svg class="gauge" width="100%" height="100%" viewBox="0 0 320 240">
+      <defs>
+        <linearGradient id="tempGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#3d8bfd"/>
+          <stop offset="50%" stop-color="#3fb950"/>
+          <stop offset="80%" stop-color="#d29922"/>
+          <stop offset="100%" stop-color="#f85149"/>
+        </linearGradient>
+      </defs>
+      <path d="M 30 210 A 130 130 0 0 1 290 210" fill="none" stroke="#21262d" stroke-width="22" stroke-linecap="round"/>
+      <path id="tempArc" d="M 30 210 A 130 130 0 0 1 290 210" fill="none" stroke="url(#tempGrad)" stroke-width="22" stroke-linecap="round" stroke-dasharray="0 999" filter="url(#glow)"/>
+      <text x="18" y="228" fill="#484f58" font-size="11">-40</text>
+      <text x="55" y="130" fill="#484f58" font-size="11">0</text>
+      <text x="143" y="82" fill="#484f58" font-size="11">60</text>
+      <text x="230" y="130" fill="#484f58" font-size="11">100</text>
+      <text x="268" y="228" fill="#f85149" font-size="11" font-weight="bold">130</text>
+      <text x="160" y="202" text-anchor="middle" fill="#484f58" font-size="12" font-weight="600" letter-spacing="1">COOLANT &deg;C</text>
+      <text id="tempVal" x="160" y="178" text-anchor="middle" fill="#3fb950" font-size="52" font-weight="bold">0</text>
+    </svg>
+  </div>
+
+  <!-- Bottom -->
+  <div class="bottom">
+    <div class="indicator">
+      <div class="label">Throttle</div>
+      <div class="value" id="thrVal" style="color:#3fb950">0%</div>
+    </div>
+    <div class="indicator">
+      <div class="label">Gear</div>
+      <div class="value" id="gearVal" style="color:#3d8bfd">P</div>
+    </div>
+    <div class="indicator">
+      <div class="label">RPM</div>
+      <div class="value" id="rpmNum" style="color:#d29922">0</div>
+    </div>
+    <div class="indicator">
+      <div class="label">Speed</div>
+      <div class="value" id="spdNum" style="color:#3d8bfd">0 km/h</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="btnPlay" class="active" onclick="togglePlay()">&#9654; Play</button>
+    <button onclick="setSpeed(0.5)">0.5x</button>
+    <button id="btn1x" class="active" onclick="setSpeed(1)">1x</button>
+    <button onclick="setSpeed(2)">2x</button>
+    <button onclick="setSpeed(5)">5x</button>
+    <button onclick="setSpeed(10)">10x</button>
+    <input type="range" id="scrubber" min="0" max="1" value="0" oninput="scrub(this.value)">
+    <span class="time-label" id="scrubTime">0:00</span>
+  </div>
+</div>
+
+<script>
+// [sec, rpm, coolant, speed, throttle, gear]
+const DATA=[
+
+];
+</script>
+<script>
+let idx=0,playing=false,playSpeed=1,timer=null;
+const arcLen=408;
+
+function setArc(id,val,min,max){
+  const p=Math.max(0,Math.min(1,(val-min)/(max-min)));
+  document.getElementById(id).setAttribute('stroke-dasharray',(p*arcLen)+' '+arcLen);
+}
+function fmt(s){return Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0')}
+
+function update(i){
+  if(i>=DATA.length){i=0;idx=0}
+  const[sec,rpm,cool,spd,thr,gear]=DATA[i];
+
+  setArc('rpmArc',rpm,0,5000);
+  const re=document.getElementById('rpmVal');
+  re.textContent=Math.round(rpm);
+  re.setAttribute('fill',rpm>4000?'#f85149':rpm>3000?'#d29922':'#e6edf3');
+
+  setArc('spdArc',spd,0,160);
+  document.getElementById('speedVal').textContent=Math.round(spd);
+
+  setArc('tempArc',cool,-40,130);
+  const te=document.getElementById('tempVal');
+  te.textContent=Math.round(cool);
+  te.setAttribute('fill',cool>105?'#f85149':cool>90?'#d29922':cool>0?'#3fb950':'#3d8bfd');
+
+  document.getElementById('thrVal').textContent=thr.toFixed(1)+'%';
+  document.getElementById('rpmNum').textContent=Math.round(rpm);
+  document.getElementById('spdNum').textContent=Math.round(spd)+' km/h';
+
+  const gears=['N','1','2','3','4','5','6','7','8'];
+  const gearEl=document.getElementById('gearVal');
+  const gv=gear>=1&&gear<=8?gears[gear]:(gear===0?'P':'N');
+  gearEl.textContent=gv;
+  gearEl.style.color=gear===0?'#8b949e':'#3d8bfd';
+  gearEl.style.fontSize=gear>=1?'32px':'24px';
+
+  document.getElementById('elapsed').textContent=fmt(sec);
+  document.getElementById('scrubber').value=i;
+  document.getElementById('scrubTime').textContent=fmt(sec);
+}
+
+function tick(){update(idx);idx++;if(idx>=DATA.length)idx=0}
+function togglePlay(){
+  playing=!playing;
+  const b=document.getElementById('btnPlay');
+  b.innerHTML=playing?'&#9646;&#9646; Pause':'&#9654; Play';
+  playing?(b.classList.add('active'),startTimer()):(b.classList.remove('active'),clearInterval(timer));
+}
+function setSpeed(s){
+  playSpeed=s;
+  document.querySelectorAll('.controls button').forEach(b=>{
+    if(b.textContent.includes('x'))b.classList.toggle('active',b.textContent.trim()===s+'x');
+  });
+  if(playing){clearInterval(timer);startTimer()}
+}
+function startTimer(){clearInterval(timer);timer=setInterval(tick,2000/playSpeed)}
+function scrub(v){idx=parseInt(v);update(idx)}
+
+window.addEventListener('load',()=>{
+  document.getElementById('scrubber').max=DATA.length-1;
+  togglePlay();
+});
+</script>
+</body>
+</html>
+
